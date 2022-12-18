@@ -34,6 +34,8 @@ export interface PlaybackDeviceContextState {
 	Extent?: [number, number];
 	/** Background Mix Mode (MS-WMF 2.1.1.20) */
 	BkMode?: number;
+	/** Background color RGB (MS-WMF 2.3.5.14) */
+	BkColor?: number;
 	/** Polygon fill mode (MS-WMF 2.1.1.25) */
 	PolyFillMode?: number;
 	/** Bitmap stretching mode (MS-WMF 2.1.1.30) */
@@ -112,7 +114,34 @@ export interface ActionStr extends ActionCommon, ActionRaster {
 	data?: any;
 }
 
-export type Action = ActionText | ActionPoly | ActionCpy | ActionStr;
+/** Move position to */
+export interface ActionMoveTo extends ActionCommon {
+	/** Action Type */
+	t: "moveto";
+
+	/** Origin */
+	p: Point;
+}
+
+/** Create line from actual position to point */
+export interface ActionLineTo extends ActionCommon {
+	/** Action Type */
+	t: "lineto";
+
+	/** Origin */
+	p: Point;
+}
+
+/** Draw rectangle */
+export interface ActionRect extends ActionCommon {
+	/** Action Type */
+	t: "rect";
+
+	/** Points */
+	p: Point[];
+}
+
+export type Action = ActionText | ActionPoly | ActionCpy | ActionStr | ActionMoveTo | ActionLineTo | ActionRect;
 
 const parse_emf = (data: PreppedBytes): void => {
 	//try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
@@ -497,6 +526,39 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				break;
 
 			// #endregion
+
+			case 0x0214: // 2.3.5.4 META_MOVETO
+				{
+					const y = data.read_shift(2);
+					const x = data.read_shift(2);
+					const point: Point = [x, y];
+					out.push({ t: "moveto", p: point, s: Object.assign({}, state) });
+				}
+				break;
+
+			case 0x0213: // 2.3.3.10 META_LINETO
+				{
+					const y = data.read_shift(2);
+					const x = data.read_shift(2);
+					const point: Point = [x, y];
+					out.push({ t: "lineto", p: point, s: Object.assign({}, state) });
+				}
+				break;
+
+			case 0x0201: // 2.3.5.14 META_SETBKCOLOR
+				state.BkColor = data.read_shift(4);
+				break;
+
+			case 0x041B: // 2.3.3.17 META_RECTANGLE
+				{
+					const points: Array<Point> = [[0, 0], [0, 0]];
+					points[1][1] = data.read_shift(2);
+					points[1][0] = data.read_shift(2);
+					points[0][1] = data.read_shift(2);
+					points[0][0] = data.read_shift(2);
+					out.push({ t: "rect", p: points, s: Object.assign({}, state) });
+				}
+				break;
 
 			default:
 				//if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;

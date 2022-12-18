@@ -32,7 +32,7 @@ export const WMFRecords: { [key: number]: WMFRecord } = {
 	0x0149: { n: 'META_SETLAYOUT' },
 	0x01F0: { n: "META_DELETEOBJECT" }, // 2.3.4.7
 	0x01F9: { n: 'META_CREATEPATTERNBRUSH' },
-	0x0201: { n: 'META_SETBKCOLOR' },
+	0x0201: { n: 'META_SETBKCOLOR' }, //2.3.5.14
 	0x0209: { n: "META_SETTEXTCOLOR" }, // 2.3.5.26
 	0x020B: { n: "META_SETWINDOWORG" }, // 2.3.5.31
 	0x020C: { n: "META_SETWINDOWEXT" }, // 2.3.5.30
@@ -41,8 +41,8 @@ export const WMFRecords: { [key: number]: WMFRecord } = {
 	0x020E: { n: 'META_SETVIEWPORTEXT' },
 	0x020F: { n: 'META_OFFSETWINDOWORG' },
 	0x0211: { n: 'META_OFFSETVIEWPORTORG' },
-	0x0213: { n: 'META_LINETO' },
-	0x0214: { n: 'META_MOVETO' },
+	0x0213: { n: 'META_LINETO' }, // 2.3.3.10
+	0x0214: { n: 'META_MOVETO' }, // 2.3.5.4
 	0x0220: { n: 'META_OFFSETCLIPRGN' },
 	0x0228: { n: 'META_FILLREGION' },
 	0x0231: { n: 'META_SETMAPPERFLAGS' },
