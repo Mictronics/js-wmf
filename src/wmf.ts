@@ -53,7 +53,7 @@ export interface PlaybackDeviceContextState {
 }
 
 /** [x, y] */
-export type Point = [ number, number ];
+export type Point = [number, number];
 
 export interface ActionCommon {
 	/** State */
@@ -120,14 +120,14 @@ const parse_emf = (data: PreppedBytes): void => {
 
 /* 2.2.2.9 */
 const parse_dib = (data: PreppedBytes) => {
-	if(data.length == 0) return null;
+	if (data.length == 0) return null;
 	prep_blob(data, 0);
 
 	/* DIBHeaderInfo */
 	const HeaderSize = data.read_shift(4);
 	let Width = 0, Height = 0, Planes = 0, BitCount = 0;
 	let Compression = 0, ImageSize = 0, XPelsPerMeter = 0, YPelsPerMeter = 0, ColorUsed = 0, ColorImportant = 0;
-	if(HeaderSize == 0x0C) {
+	if (HeaderSize == 0x0C) {
 		Width = data.read_shift(2);
 		Height = data.read_shift(2);
 	} else {
@@ -143,7 +143,7 @@ const parse_dib = (data: PreppedBytes) => {
 		BitCount,
 	};
 
-	if(HeaderSize != 0x0C) {
+	if (HeaderSize != 0x0C) {
 		Compression = data.read_shift(4);
 		ImageSize = data.read_shift(4);
 		XPelsPerMeter = data.read_shift(4, 'i');
@@ -151,12 +151,12 @@ const parse_dib = (data: PreppedBytes) => {
 		ColorUsed = data.read_shift(4);
 		ColorImportant = data.read_shift(4);
 		out["Compression"] = Compression;
-		if(BitCount == 24 && ImageSize > Height * 3 * Width) Width = out["Width"] = ImageSize / (Height * 3);
+		if (BitCount == 24 && ImageSize > Height * 3 * Width) Width = out["Width"] = ImageSize / (Height * 3);
 	}
 
 	/* Colors */
 	/* BitmapBuffer */
-	if(ImageSize == data.length - data.l) {
+	if (ImageSize == data.length - data.l) {
 		out["ImageData"] = data.slice(data.l, data.length);
 		prep_blob(out["ImageData"], 0);
 	}
@@ -164,31 +164,46 @@ const parse_dib = (data: PreppedBytes) => {
 }
 
 const add_to_objects = (objects: PlaybackDeviceContextState[], obj: PlaybackDeviceContextState): void => {
-	for(var i = 0; i < objects.length; ++i) if(!objects[i]) { objects[i] = obj; return }
+	for (var i = 0; i < objects.length; ++i) if (!objects[i]) { objects[i] = obj; return }
 	objects.push(obj);
 }
 
 export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 	const out: Action[] = [];
-
+	let h = data.read_shift(2);
+	if (h == 0xcdd7) {
+		h = data.read_shift(2);
+		if (h != 0x9ac6) throw 'Header: Not a META_PLACEABLE Record';
+		/* 2.3.2.3 META_PLACEABLE Record */
+		// Must start with key ID 0x9AC6CDD7
+		const hWmf = data.read_shift(2);
+		const left = data.read_shift(2);
+		const top = data.read_shift(2);
+		const right = data.read_shift(2);
+		const bottom = data.read_shift(2);
+		const inch = data.read_shift(2);
+		const reserved = data.read_shift(4);
+		const cs = data.read_shift(2);
+		// Skip META PLACABLE record
+		h = data.read_shift(2);
+	}
 	/* 2.3.2.2 META_HEADER */
 	// Type (2 bytes) must be 1 or 2
-	let h = data.read_shift(2);
-	if(h != 1 && h != 2) throw `Header: Type ${h} must be 1 or 2`;
+	if (h != 1 && h != 2) throw `Header: Type ${h} must be 1 or 2`;
 
 	// HeaderSize expected to be 9
-	if((h = data.read_shift(2)) != 9) throw `Header: HeaderSize ${h} must be 9`;
+	if ((h = data.read_shift(2)) != 9) throw `Header: HeaderSize ${h} must be 9`;
 
 	// Version (2 bytes) 1 or 3
 	h = data.read_shift(2);
-	if(h != 0x0100 && h != 0x0300) throw `Header: Version ${h} must be 0x0100 or 0x0300`;
+	if (h != 0x0100 && h != 0x0300) throw `Header: Version ${h} must be 0x0100 or 0x0300`;
 
 	// SizeLow / SizeHigh
 	data.l += 4;
 
 	// #Objects
 	const NumberOfObjects = data.read_shift(2);
-	let objects: PlaybackDeviceContextState[] = Array.from({length: NumberOfObjects}, () => null);
+	let objects: PlaybackDeviceContextState[] = Array.from({ length: NumberOfObjects }, () => null);
 
 	// MaxRecord
 	data.l += 4;
@@ -209,52 +224,52 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 	let state: PlaybackDeviceContextState = {};
 	let sidx = -1;
 
-	while(data.l < data.length) {
+	while (data.l < data.length) {
 		h = data.read_shift(4);
-		const end = data.l + h*2 - 4;
+		const end = data.l + h * 2 - 4;
 
 		rt = data.read_shift(2);
 		let Record = WMFRecords[rt];
-		if(rt == 0x0000) break; // META_EOF
-		switch(rt) {
+		if (rt == 0x0000) break; // META_EOF
+		switch (rt) {
 			case 0x0626: { // META_ESCAPE
 				const EscapeFunction = data.read_shift(2);
 				const Escape = WMFEscapes[EscapeFunction];
 				/* 2.3.6 */
-				switch(EscapeFunction) {
+				switch (EscapeFunction) {
 					case 0x000F: { // META_ESCAPE_ENHANCED_METAFILE
 						const ByteCount = data.read_shift(2);
 						let tmp = data.read_shift(4);
-						if(tmp != 0x43464D57) throw `Escape: Comment ID 0x${tmp.toString(16)} != 0x43464D57`;
+						if (tmp != 0x43464D57) throw `Escape: Comment ID 0x${tmp.toString(16)} != 0x43464D57`;
 						tmp = data.read_shift(4);
-						if(tmp != 0x00000001) throw `Escape: Comment Type 0x${tmp.toString(16)} != 0x00000001`;
+						if (tmp != 0x00000001) throw `Escape: Comment Type 0x${tmp.toString(16)} != 0x00000001`;
 						tmp = data.read_shift(4);
-						if(tmp != 0x00010000) throw `Escape: Version 0x${tmp.toString(16)} != 0x00010000`;
+						if (tmp != 0x00010000) throw `Escape: Version 0x${tmp.toString(16)} != 0x00010000`;
 
 						const Checksum = data.read_shift(2);
 
 						data.l += 4; // Flags
-						if(escapecnt == 0) {
+						if (escapecnt == 0) {
 							CommentRecordCount = data.read_shift(4); // total number of records
 						} else {
 							const _CommentRecordCount = data.read_shift(4);
-							if(_CommentRecordCount != CommentRecordCount) throw `Escape: CommentRecordCount ${_CommentRecordCount} != ${CommentRecordCount}`;
+							if (_CommentRecordCount != CommentRecordCount) throw `Escape: CommentRecordCount ${_CommentRecordCount} != ${CommentRecordCount}`;
 						}
 						const CurrentRecordSize = data.read_shift(4); // size of this record
 						const _RemainingBytes = data.read_shift(4);
-						if(escapecnt > 0 && CurrentRecordSize + _RemainingBytes != RemainingBytes) throw `Escape: ${RemainingBytes} != ${CurrentRecordSize} + ${_RemainingBytes}`;
+						if (escapecnt > 0 && CurrentRecordSize + _RemainingBytes != RemainingBytes) throw `Escape: ${RemainingBytes} != ${CurrentRecordSize} + ${_RemainingBytes}`;
 						RemainingBytes = _RemainingBytes;
 						const _EnhancedMetafileDataSize = data.read_shift(4);
-						if(escapecnt == 0) {
-							if(_EnhancedMetafileDataSize != CurrentRecordSize + _RemainingBytes) throw `Escape: ${_EnhancedMetafileDataSize} != ${CurrentRecordSize} + ${_RemainingBytes}`;
+						if (escapecnt == 0) {
+							if (_EnhancedMetafileDataSize != CurrentRecordSize + _RemainingBytes) throw `Escape: ${_EnhancedMetafileDataSize} != ${CurrentRecordSize} + ${_RemainingBytes}`;
 							EnhancedMetafileDataSize = _EnhancedMetafileDataSize;
-						} else if(EnhancedMetafileDataSize != _EnhancedMetafileDataSize) throw `Escape: ${EnhancedMetafileDataSize} != ${_EnhancedMetafileDataSize}`;
+						} else if (EnhancedMetafileDataSize != _EnhancedMetafileDataSize) throw `Escape: ${EnhancedMetafileDataSize} != ${_EnhancedMetafileDataSize}`;
 
-						if(ByteCount != (end - data.l) + 34) throw `Escape: Sizes ${ByteCount} != ${end - data.l} + 34`
-						if(end - data.l != CurrentRecordSize) throw `Escape: CRSize ${CurrentRecordSize} != ${end - data.l}`;
+						if (ByteCount != (end - data.l) + 34) throw `Escape: Sizes ${ByteCount} != ${end - data.l} + 34`
+						if (end - data.l != CurrentRecordSize) throw `Escape: CRSize ${CurrentRecordSize} != ${end - data.l}`;
 						bufs.push(data.slice(data.l, end));
 						++escapecnt;
-						if(escapecnt == CommentRecordCount) {
+						if (escapecnt == CommentRecordCount) {
 							const prepped: PreppedBytes = bconcat(bufs) as PreppedBytes;
 							prep_blob(prepped, 0);
 							parse_emf(prepped);
@@ -267,11 +282,11 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			// #region 2.3.1 Bitmap Record Types
 
 			case 0x0940: { // 2.3.1.2 META_DIBBITBLT
-				const has_bitmap = h != (rt>>8)+3;
+				const has_bitmap = h != (rt >> 8) + 3;
 				const RasterOperation = data.read_shift(4);
 				const YSrc = data.read_shift(2, "i");
 				const XSrc = data.read_shift(2, "i");
-				if(!has_bitmap) data.l += 2;
+				if (!has_bitmap) data.l += 2;
 				const Height = data.read_shift(2, "i");
 				const Width = data.read_shift(2, "i");
 				const YDest = data.read_shift(2, "i");
@@ -283,7 +298,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 					rop: RasterOperation,
 					s: Object.assign({}, state)
 				};
-				if(has_bitmap) {
+				if (has_bitmap) {
 					const DIB = parse_dib(data.slice(data.l, end) as PreppedBytes);
 					res.data = DIB;
 				}
@@ -291,13 +306,13 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			} break;
 
 			case 0x0B41: { // 2.3.1.3 META_DIBSTRETCHBLT
-				const has_bitmap = h != (rt>>8)+3;
+				const has_bitmap = h != (rt >> 8) + 3;
 				const RasterOperation = data.read_shift(4);
 				const SrcHeight = data.read_shift(2, "i");
 				const SrcWidth = data.read_shift(2, "i");
 				const YSrc = data.read_shift(2, "i");
 				const XSrc = data.read_shift(2, "i");
-				if(!has_bitmap) data.l += 2;
+				if (!has_bitmap) data.l += 2;
 				const DestHeight = data.read_shift(2, "i");
 				const DestWidth = data.read_shift(2, "i");
 				const YDest = data.read_shift(2, "i");
@@ -309,7 +324,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 					rop: RasterOperation,
 					s: Object.assign({}, state)
 				};
-				if(has_bitmap) {
+				if (has_bitmap) {
 					const DIB = parse_dib(data.slice(data.l, end) as PreppedBytes);
 					res.data = DIB;
 				}
@@ -325,34 +340,34 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				const X = data.read_shift(2);
 				const StringLength = data.read_shift(2);
 				const fwOpts = data.read_shift(2); // 2.1.2.2
-				if(fwOpts & 0x06) {
+				if (fwOpts & 0x06) {
 					data.l += 8; // Rectangle 2.2.2.18 (for clipping/opaquing)
 				}
 				const str = data.read_shift(StringLength, 'cpstr');
-				if(data.l < end){/* TODO: Dx */}
-				out.push({t: "text", v: str, p: [X, Y], s: Object.assign({}, state)});
+				if (data.l < end) {/* TODO: Dx */ }
+				out.push({ t: "text", v: str, p: [X, Y], s: Object.assign({}, state) });
 				/* TODO!! */
 			} break;
 
 			case 0x0325: // 2.3.3.14 META_POLYLINE
 			case 0x0324: // 2.3.3.15 META_POLYGON
-			{
-				const nPoints = data.read_shift(2);
-				const points: Array<Point> = [];
-				for(let i = 0; i < nPoints; ++i) points.push([data.read_shift(2), data.read_shift(2)])
-				out.push({t: "poly", p: points, g: rt !== 0x0325, s: Object.assign({}, state)});
-			} break;
+				{
+					const nPoints = data.read_shift(2);
+					const points: Array<Point> = [];
+					for (let i = 0; i < nPoints; ++i) points.push([data.read_shift(2), data.read_shift(2)])
+					out.push({ t: "poly", p: points, g: rt !== 0x0325, s: Object.assign({}, state) });
+				} break;
 
 			case 0x0538: { // 2.3.3.16 META_POLYPOLYGON
 				const nPolygons = data.read_shift(2);
-				const polys: Array<Array<Point> > = [];
+				const polys: Array<Array<Point>> = [];
 				const szs: number[] = [];
 				/* 2.2.2.17 PolyPolygon */
-				for(let i = 0; i < nPolygons; ++i) szs[i] = data.read_shift(2);
-				for(let i = 0; i < szs.length; ++i) {
+				for (let i = 0; i < nPolygons; ++i) szs[i] = data.read_shift(2);
+				for (let i = 0; i < szs.length; ++i) {
 					polys[i] = [];
-					for(let j = 0; j < szs[i]; ++j) polys[i].push([data.read_shift(2), data.read_shift(2)])
-					out.push({t: "poly", p: polys[i], g: true, s: Object.assign({}, state)});
+					for (let j = 0; j < szs[i]; ++j) polys[i].push([data.read_shift(2), data.read_shift(2)])
+					out.push({ t: "poly", p: polys[i], g: true, s: Object.assign({}, state) });
 				}
 			} break;
 
@@ -427,7 +442,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			// #region 2.3.5 State Record Types
 
 			case 0x0416: // 2.3.5.3 META_INTERSECTCLIPRECT
-				state.ClipRect = [[0,0],[0,0]];
+				state.ClipRect = [[0, 0], [0, 0]];
 				state.ClipRect[1][1] = data.read_shift(2);
 				state.ClipRect[1][0] = data.read_shift(2);
 				state.ClipRect[0][1] = data.read_shift(2);
@@ -489,38 +504,56 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 		}
 		data.l = end;
 	}
-	if(rt !== 0) throw `Record: Last Record Type ${rt} is not EOF type`;
+	if (rt !== 0) throw `Record: Last Record Type ${rt} is not EOF type`;
 	return out;
 }
 
 export const image_size_prepped_bytes = (data: PreppedBytes): [number, number] => {
-	/* 2.3.22 META_HEADER */
-	// Type (2 bytes) must be 1 or 2
+	const extents: [number, number] = [NaN, NaN];
 	let h = data.read_shift(2);
-	if(h != 1 && h != 2) throw `Header: Type ${h} must be 1 or 2`;
-	// HeaderSize expected to be 9
-	if((h = data.read_shift(2)) != 9) throw `Header: HeaderSize ${h} must be 9`;
-	// Version (2 bytes) 1 or 3
-	h = data.read_shift(2);
-	if(h != 0x0100 && h != 0x0300) throw `Header: Version ${h} must be 0x0100 or 0x0300`;
-	data.l = 18;
+	if (h == 0xcdd7) {
+		h = data.read_shift(2);
+		if (h != 0x9ac6) throw 'Header: Not a META_PLACEABLE Record';
+		/* 2.3.2.3 META_PLACEABLE Record */
+		// Must start with key ID 0x9AC6CDD7
+		const hWmf = data.read_shift(2);
+		const left = data.read_shift(2);
+		const top = data.read_shift(2);
+		const right = data.read_shift(2);
+		const bottom = data.read_shift(2);
+		const inch = data.read_shift(2);
+		const reserved = data.read_shift(4);
+		const checksum = data.read_shift(2);
+		extents[0] = right - left;
+		extents[1] = bottom - top;
+		return extents;
+	} else {
+		/* 2.3.22 META_HEADER */
+		// Type (2 bytes) must be 1 or 2
+		if (h != 1 && h != 2) throw `Header: Type ${h} must be 1 or 2`;
+		// HeaderSize expected to be 9
+		if ((h = data.read_shift(2)) != 9) throw `Header: HeaderSize ${h} must be 9`;
+		// Version (2 bytes) 1 or 3
+		h = data.read_shift(2);
+		if (h != 0x0100 && h != 0x0300) throw `Header: Version ${h} must be 0x0100 or 0x0300`;
+		data.l = 18;
 
-	let rt = 0;
+		let rt = 0;
 
-	while(data.l < data.length) {
-		h = data.read_shift(4);
-		const end = data.l + h*2 - 4;
+		while (data.l < data.length) {
+			h = data.read_shift(4);
+			const end = data.l + h * 2 - 4;
 
-		rt = data.read_shift(2);
-		if(rt == 0x0000) break; // META_EOF
-		if(rt == 0x020C) {// 2.3.5.30 META_SETWINDOWEXT
-			const extents: [number, number] = [NaN, NaN];
-			extents[1] = data.read_shift(2);
-			extents[0] = data.read_shift(2);
-			return extents;
+			rt = data.read_shift(2);
+			if (rt == 0x0000) break; // META_EOF
+			if (rt == 0x020C) {// 2.3.5.30 META_SETWINDOWEXT
+				extents[1] = data.read_shift(2);
+				extents[0] = data.read_shift(2);
+				return extents;
+			}
+			data.l = end;
 		}
-		data.l = end;
 	}
 
-	return [NaN, NaN];
+	return extents;
 };
