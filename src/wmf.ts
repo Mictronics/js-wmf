@@ -500,7 +500,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			default:
 				//if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;
-				console.log(Record);
+				console.log(`Record: Unrecognized type 0x${rt.toString(16)}`);
 		}
 		data.l = end;
 	}
