@@ -7,12 +7,12 @@ js/index.js: src/index.ts
 	tsc
 
 node: js/index.js
-	webpack-cli --config misc/webpack.node.config.js
+	npx webpack-cli --config misc/webpack.node.config.js
 
 browser: js/index.js
-	webpack-cli --config misc/webpack.browser.config.js
+	npx webpack-cli --config misc/webpack.browser.config.js
 
 .PHONY: dist prod
 dist prod: js/index.js
-	webpack-cli --mode=production --config misc/webpack.node.config.js
-	webpack-cli --mode=production --config misc/webpack.browser.config.js
+	npx webpack-cli --mode=production --config misc/webpack.node.config.js
+	npx webpack-cli --mode=production --config misc/webpack.browser.config.js
