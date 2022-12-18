@@ -3,3 +3,4 @@ node_modules/
 *.[wWeE][mM][fF]
 *.[pP][nN][gG]
 *.[tT][gG][zZ]
+*.code-workspace
