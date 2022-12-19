@@ -365,8 +365,8 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			// #region 2.3.3 Drawing Record Types
 
 			case 0x0A32: { // 2.3.3.5 META_EXTTEXTOUT
-				const Y = data.read_shift(2);
-				const X = data.read_shift(2);
+				const Y = data.read_shift(2, 'i');
+				const X = data.read_shift(2, 'i');
 				const StringLength = data.read_shift(2);
 				const fwOpts = data.read_shift(2); // 2.1.2.2
 				if (fwOpts & 0x06) {
@@ -383,7 +383,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				{
 					const nPoints = data.read_shift(2);
 					const points: Array<Point> = [];
-					for (let i = 0; i < nPoints; ++i) points.push([data.read_shift(2), data.read_shift(2)])
+					for (let i = 0; i < nPoints; ++i) points.push([data.read_shift(2, 'i'), data.read_shift(2, 'i')])
 					out.push({ t: "poly", p: points, g: rt !== 0x0325, s: Object.assign({}, state) });
 				} break;
 
@@ -395,7 +395,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				for (let i = 0; i < nPolygons; ++i) szs[i] = data.read_shift(2);
 				for (let i = 0; i < szs.length; ++i) {
 					polys[i] = [];
-					for (let j = 0; j < szs[i]; ++j) polys[i].push([data.read_shift(2), data.read_shift(2)])
+					for (let j = 0; j < szs[i]; ++j) polys[i].push([data.read_shift(2, 'i'), data.read_shift(2, 'i')])
 					out.push({ t: "poly", p: polys[i], g: true, s: Object.assign({}, state) });
 				}
 			} break;
@@ -472,10 +472,10 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			case 0x0416: // 2.3.5.3 META_INTERSECTCLIPRECT
 				state.ClipRect = [[0, 0], [0, 0]];
-				state.ClipRect[1][1] = data.read_shift(2);
-				state.ClipRect[1][0] = data.read_shift(2);
-				state.ClipRect[0][1] = data.read_shift(2);
-				state.ClipRect[0][0] = data.read_shift(2);
+				state.ClipRect[1][1] = data.read_shift(2, 'i');
+				state.ClipRect[1][0] = data.read_shift(2, 'i');
+				state.ClipRect[0][1] = data.read_shift(2, 'i');
+				state.ClipRect[0][0] = data.read_shift(2, 'i');
 				break;
 
 			case 0x0127: { // 2.3.5.10 META_RESTOREDC
@@ -515,22 +515,22 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			case 0x020C: // 2.3.5.30 META_SETWINDOWEXT
 				state.Extent = [0, 0];
-				state.Extent[1] = data.read_shift(2);
-				state.Extent[0] = data.read_shift(2);
+				state.Extent[1] = data.read_shift(2, 'i');
+				state.Extent[0] = data.read_shift(2, 'i');
 				break;
 
 			case 0x020B: // 2.3.5.31 META_SETWINDOWORG
 				state.Origin = [0, 0];
-				state.Origin[1] = data.read_shift(2);
-				state.Origin[0] = data.read_shift(2);
+				state.Origin[1] = data.read_shift(2, 'i');
+				state.Origin[0] = data.read_shift(2, 'i');
 				break;
 
 			// #endregion
 
 			case 0x0214: // 2.3.5.4 META_MOVETO
 				{
-					const y = data.read_shift(2);
-					const x = data.read_shift(2);
+					const y = data.read_shift(2, 'i');
+					const x = data.read_shift(2, 'i');
 					const point: Point = [x, y];
 					out.push({ t: "moveto", p: point, s: Object.assign({}, state) });
 				}
@@ -538,8 +538,8 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			case 0x0213: // 2.3.3.10 META_LINETO
 				{
-					const y = data.read_shift(2);
-					const x = data.read_shift(2);
+					const y = data.read_shift(2, 'i');
+					const x = data.read_shift(2, 'i');
 					const point: Point = [x, y];
 					out.push({ t: "lineto", p: point, s: Object.assign({}, state) });
 				}
@@ -552,17 +552,17 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			case 0x041B: // 2.3.3.17 META_RECTANGLE
 				{
 					const points: Array<Point> = [[0, 0], [0, 0]];
-					points[1][1] = data.read_shift(2);
-					points[1][0] = data.read_shift(2);
-					points[0][1] = data.read_shift(2);
-					points[0][0] = data.read_shift(2);
+					points[1][1] = data.read_shift(2, 'i');
+					points[1][0] = data.read_shift(2, 'i');
+					points[0][1] = data.read_shift(2, 'i');
+					points[0][0] = data.read_shift(2, 'i');
 					out.push({ t: "rect", p: points, s: Object.assign({}, state) });
 				}
 				break;
 
 			case 0x521: // 2.3.3.20 META_TEXTOUT
 				{
-					const StringLength = data.read_shift(2);
+					const StringLength = data.read_shift(2, 'i');
 					const str = data.read_shift(StringLength, 'cpstr');
 					if (StringLength % 2 === 1) {
 						/* String field size is always of even length, even if the string is odd length.
