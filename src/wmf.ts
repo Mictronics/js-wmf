@@ -52,6 +52,8 @@ export interface PlaybackDeviceContextState {
 	Pen?: Pen;
 	/** Clipping Region (x,y) LT (x,y) RB */
 	ClipRect?: [[number, number], [number, number]];
+	/** Actual output position */
+	Position?: [number, number];
 }
 
 /** [x, y] */
@@ -114,15 +116,6 @@ export interface ActionStr extends ActionCommon, ActionRaster {
 	data?: any;
 }
 
-/** Move position to */
-export interface ActionMoveTo extends ActionCommon {
-	/** Action Type */
-	t: "moveto";
-
-	/** Origin */
-	p: Point;
-}
-
 /** Create line from actual position to point */
 export interface ActionLineTo extends ActionCommon {
 	/** Action Type */
@@ -141,7 +134,7 @@ export interface ActionRect extends ActionCommon {
 	p: Point[];
 }
 
-export type Action = ActionText | ActionPoly | ActionCpy | ActionStr | ActionMoveTo | ActionLineTo | ActionRect;
+export type Action = ActionText | ActionPoly | ActionCpy | ActionStr | ActionLineTo | ActionRect;
 
 const parse_emf = (data: PreppedBytes): void => {
 	//try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
@@ -525,16 +518,17 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				state.Origin[0] = data.read_shift(2, 'i');
 				break;
 
-			// #endregion
-
 			case 0x0214: // 2.3.5.4 META_MOVETO
 				{
 					const y = data.read_shift(2, 'i');
 					const x = data.read_shift(2, 'i');
-					const point: Point = [x, y];
-					out.push({ t: "moveto", p: point, s: Object.assign({}, state) });
+					//const point: Point = [x, y];
+					state.Position = [x, y];
+					//out.push({ t: "moveto", p: point, s: Object.assign({}, state) });
 				}
 				break;
+
+			// #endregion
 
 			case 0x0213: // 2.3.3.10 META_LINETO
 				{
