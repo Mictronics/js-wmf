@@ -560,6 +560,22 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				}
 				break;
 
+			case 0x521: // 2.3.3.20 META_TEXTOUT
+				{
+					const StringLength = data.read_shift(2);
+					const str = data.read_shift(StringLength, 'cpstr');
+					if (StringLength % 2 === 1) {
+						/* String field size is always of even length, even if the string is odd length.
+						 * read additional padding byte in case of odd string length.
+						 */
+						data.read_shift(1);
+					}
+					const Y = data.read_shift(2, 'i');
+					const X = data.read_shift(2, 'i');
+					out.push({ t: "text", v: str, p: [X, Y], s: Object.assign({}, state) });
+				}
+				break;
+
 			default:
 				//if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;
 				console.log(`Record: Unrecognized type 0x${rt.toString(16)}`);
