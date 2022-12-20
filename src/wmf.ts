@@ -14,6 +14,32 @@ export enum eTextAlignmentMode {
 	Baseline = 24
 };
 
+/* Background mix mode */
+export enum eMixMode {
+	Transparent = 1,
+	Opaque = 2
+};
+
+/* Pen styles */
+export enum ePenStyles {
+	Cosmetic = 0x0000,
+	EndCapRound = 0x0000,
+	JoinRound = 0x0000,
+	Solid = 0x0000,
+	Dash = 0x0001,
+	Dot = 0x0002,
+	DashDot = 0x0003,
+	DashDotDot = 0x0004,
+	Null = 0x0005,
+	InsideFrame = 0x0006,
+	UserStyle = 0x0007,
+	Alternate = 0x0008,
+	EndCapSquare = 0x0100,
+	EndCapFlat = 0x0200,
+	JoinBevel = 0x1000,
+	JoinMiter = 0x2000
+};
+
 export interface Brush {
 	/** Style (MS-WMF 2.1.1.4) */
 	Style?: Number;
@@ -24,7 +50,7 @@ export interface Brush {
 }
 
 export interface Pen {
-	Style?: number;
+	Style?: ePenStyles;
 	Width?: number;
 	Color?: number;
 }
@@ -45,7 +71,7 @@ export interface PlaybackDeviceContextState {
 	/** Output window extents (X, Y) */
 	Extent?: [number, number];
 	/** Background Mix Mode (MS-WMF 2.1.1.20) */
-	BkMode?: number;
+	BkMode?: eMixMode;
 	/** Background color RGB (MS-WMF 2.3.5.14) */
 	BkColor?: number;
 	/** Polygon fill mode (MS-WMF 2.1.1.25) */
