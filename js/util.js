@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.bconcat = exports.__utf16le = exports.new_buf = exports.prep_blob = exports.CheckField = exports.WriteShift = exports.ReadShift = exports.chr1 = exports.chr0 = exports._chr = exports.new_unsafe_buf = exports.new_raw_buf = exports.has_buf = exports.Buffer_from = void 0;
 // ---
 var has_buf = !!(typeof Buffer !== 'undefined' && typeof process !== 'undefined' && typeof process.versions !== 'undefined' && process.versions.node);
 exports.has_buf = has_buf;
@@ -20,9 +21,12 @@ if (typeof Buffer !== 'undefined') {
     if (!Buffer.allocUnsafe)
         Buffer.allocUnsafe = function (n) { return new Buffer(n); };
 }
-exports.new_raw_buf = function (len) { return has_buf ? Buffer.alloc(len) : new Array(len); };
-exports.new_unsafe_buf = function (len) { return has_buf ? Buffer.allocUnsafe(len) : new Array(len); };
-exports._chr = function (c) { return String.fromCharCode(c); };
+var new_raw_buf = function (len) { return has_buf ? Buffer.alloc(len) : new Array(len); };
+exports.new_raw_buf = new_raw_buf;
+var new_unsafe_buf = function (len) { return has_buf ? Buffer.allocUnsafe(len) : new Array(len); };
+exports.new_unsafe_buf = new_unsafe_buf;
+var _chr = function (c) { return String.fromCharCode(c); };
+exports._chr = _chr;
 exports.chr0 = /\u0000/g; // eslint-disable-line no-control-regex
 exports.chr1 = /[\u0001-\u0006]/g; // eslint-disable-line no-control-regex
 // ---
@@ -367,7 +371,7 @@ var prep_blob = function (blob, pos) {
 };
 exports.prep_blob = prep_blob;
 var new_buf = function (sz) {
-    var o = exports.new_raw_buf(sz);
+    var o = (0, exports.new_raw_buf)(sz);
     prep_blob(o, 0);
     return o;
 };
