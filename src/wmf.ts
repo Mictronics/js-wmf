@@ -2,6 +2,18 @@
 import { PreppedBytes, RawBytes, bconcat, prep_blob } from './util';
 import { WMFRecords, WMFEscapes } from './Records';
 
+/* Text Alignment Options */
+export enum eTextAlignmentMode {
+	Left = 0,
+	Top = 0,
+	NoUpdateCp = 0,
+	UpdateCp = 1,
+	Right = 2,
+	Center = 6,
+	Bottom = 8,
+	Baseline = 24
+};
+
 export interface Brush {
 	/** Style (MS-WMF 2.1.1.4) */
 	Style?: Number;
@@ -41,7 +53,7 @@ export interface PlaybackDeviceContextState {
 	/** Bitmap stretching mode (MS-WMF 2.1.1.30) */
 	StretchMode?: number;
 	/** Text alignment mode (MS-WMF 2.1.2.3 / 2.1.2.4) */
-	TextAlignmentMode?: number;
+	TextAlignmentMode?: eTextAlignmentMode;
 	/** Text foreground color RGB */
 	TextColor?: number;
 	/** Brush */
@@ -253,6 +265,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 		rt = data.read_shift(2);
 		let Record = WMFRecords[rt];
 		if (rt == 0x0000) break; // META_EOF
+		console.log(`0x${rt} ${Record.n}`);
 		switch (rt) {
 			case 0x0626: { // META_ESCAPE
 				const EscapeFunction = data.read_shift(2);
@@ -522,9 +535,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				{
 					const y = data.read_shift(2, 'i');
 					const x = data.read_shift(2, 'i');
-					//const point: Point = [x, y];
 					state.Position = [x, y];
-					//out.push({ t: "moveto", p: point, s: Object.assign({}, state) });
 				}
 				break;
 
@@ -536,6 +547,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 					const x = data.read_shift(2, 'i');
 					const point: Point = [x, y];
 					out.push({ t: "lineto", p: point, s: Object.assign({}, state) });
+					state.Position = point;
 				}
 				break;
 
@@ -545,12 +557,16 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			case 0x041B: // 2.3.3.17 META_RECTANGLE
 				{
-					const points: Array<Point> = [[0, 0], [0, 0]];
-					points[1][1] = data.read_shift(2, 'i');
-					points[1][0] = data.read_shift(2, 'i');
-					points[0][1] = data.read_shift(2, 'i');
-					points[0][0] = data.read_shift(2, 'i');
-					out.push({ t: "rect", p: points, s: Object.assign({}, state) });
+					let a = data.read_shift(2, 'i');
+					let b = data.read_shift(2, 'i');
+					let c = data.read_shift(2, 'i');
+					let d = data.read_shift(2, 'i');
+					let i;
+					if (a < c && b < d) {
+						i = a; a = c; c = i;
+						i = b; b = d; d = i;
+					}
+					out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
 				}
 				break;
 

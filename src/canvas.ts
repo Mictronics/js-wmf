@@ -1,6 +1,6 @@
 /*! wmf.js (C) 2020-present SheetJS LLC -- https://sheetjs.com */
 import { PreppedBytes, prep_blob } from './util';
-import { Action, PlaybackDeviceContextState, get_actions_prepped_bytes } from './wmf'
+import { Action, PlaybackDeviceContextState, get_actions_prepped_bytes, eTextAlignmentMode } from './wmf'
 
 export const css_color = (clr: number): string => `#${(clr & 0xFF).toString(16).padStart(2, "0")}${((clr >> 8) & 0xFF).toString(16).padStart(2, "0")}${((clr >> 16) & 0xFF).toString(16).padStart(2, "0")}`
 
@@ -61,14 +61,31 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				if (act.s.Brush.Style != 1) ctx.fill();
 				break;
 			case "text":
-				if (act.s && act.s.TextColor) ctx.fillStyle = css_color(act.s.TextColor);
-				if (act.s.Font.Angle != 0) {
-					ctx.translate(act.p[0], act.p[1]);
-					ctx.rotate(-act.s.Font.Angle * Math.PI / 180);
-					ctx.fillText(act.v, 0, 0);
-					ctx.translate(-act.p[0], -act.p[1]);
+				{
+					const i = (act.s.Font.Italic) ? 'italic' : 'normal';
+					let x = 0;
+					ctx.textBaseline = 'alphabetic';
+					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Top) == eTextAlignmentMode.Top) {
+						ctx.textBaseline = 'top';
+					}
+					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Bottom) == eTextAlignmentMode.Bottom) {
+						ctx.textBaseline = 'bottom';
+					}
+					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Center) == eTextAlignmentMode.Center) {
+						x = ctx.measureText(act.v).width / 2;
+					} else if ((act.s.TextAlignmentMode & eTextAlignmentMode.Right) == eTextAlignmentMode.Right) {
+						x = ctx.measureText(act.v).width;
+					}
+					ctx.font = `${i} normal ${act.s.Font.Weight ?? 400} ${Math.abs(act.s.Font.Height)}px ${act.s.Font.Name}`;
+					if (act.s && act.s.TextColor) ctx.fillStyle = css_color(act.s.TextColor);
+					if (act.s.Font.Angle != 0) {
+						ctx.translate(act.p[0] - x, act.p[1]);
+						ctx.rotate(-act.s.Font.Angle * Math.PI / 180);
+						ctx.fillText(act.v, 0, 0);
+						ctx.translate(-act.p[0] - x, -act.p[1]);
+					}
+					else ctx.fillText(act.v, act.p[0] - x, act.p[1]);
 				}
-				else ctx.fillText(act.v, act.p[0], act.p[1]);
 				break;
 			case "cpy": {
 				// TODO: base on ROP
