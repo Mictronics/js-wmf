@@ -67,8 +67,7 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				if (act.s.Pen.Color != null) ctx.strokeStyle = css_color(act.s.Pen.Color);
 				if (act.s.Pen.Width > 0) ctx.lineWidth = act.s.Pen.Width;
 				if (act.s.Brush.Color != null) ctx.fillStyle = css_color(act.s.Brush.Color);
-				ctx.moveTo(act.p[0][0], act.p[0][1]);
-				ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0], act.p[1][1]);
+				ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
 				ctx.closePath();
 				if (act.s.Pen.Style != 5) ctx.stroke();
 				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != 1) ctx.fill();
