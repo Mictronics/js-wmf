@@ -16,8 +16,8 @@ export enum eTextAlignmentMode {
 
 /* Background mix mode */
 export enum eMixMode {
-	Transparent = 1,
-	Opaque = 2
+	Transparent = 1, /* Background remains untouched. */
+	Opaque = 2 /* Background is filled with the current background color before the text, hatched brush, or pen is drawn. */
 };
 
 /* Pen styles */
@@ -40,9 +40,22 @@ export enum ePenStyles {
 	JoinMiter = 0x2000
 };
 
+export enum eBrushStyles {
+	Solid = 0x0000,
+	Null = 0x0001,
+	Hatched = 0x0002,
+	Pattern = 0x0003,
+	Indexed = 0x0004,
+	DibPattern = 0x0005,
+	DibPatternPT = 0x0006,
+	Pattern8x8 = 0x0007,
+	DibPattern8x8 = 0x0008,
+	MonoPattern = 0x0009
+};
+
 export interface Brush {
 	/** Style (MS-WMF 2.1.1.4) */
-	Style?: Number;
+	Style?: eBrushStyles;
 	/** Brush color RGB */
 	Color?: number;
 	/** Hatch Type (2.1.1.12 if brush is hatched) */
