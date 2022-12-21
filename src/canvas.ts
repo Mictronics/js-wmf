@@ -1,6 +1,6 @@
 /*! wmf.js (C) 2020-present SheetJS LLC -- https://sheetjs.com */
 import { PreppedBytes, prep_blob } from './util';
-import { Action, PlaybackDeviceContextState, get_actions_prepped_bytes, eTextAlignmentMode, eMixMode } from './wmf'
+import { Action, PlaybackDeviceContextState, get_actions_prepped_bytes, eTextAlignmentMode, eMixMode, eBrushStyles } from './wmf'
 
 export const css_color = (clr: number): string => `#${(clr & 0xFF).toString(16).padStart(2, "0")}${((clr >> 8) & 0xFF).toString(16).padStart(2, "0")}${((clr >> 16) & 0xFF).toString(16).padStart(2, "0")}`
 
@@ -49,7 +49,7 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				});
 				if (act.g) ctx.closePath();
 				if (act.s.Pen.Style != 5) ctx.stroke();
-				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != 1) ctx.fill();
+				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != eBrushStyles.Null) ctx.fill();
 				break;
 			case 'lineto':
 				ctx.beginPath();
@@ -60,7 +60,7 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				ctx.lineTo(act.p[0], act.p[1]);
 				ctx.closePath();
 				if (act.s.Pen.Style != 5) ctx.stroke();
-				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != 1) ctx.fill();
+				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != eBrushStyles.Null) ctx.fill();
 				break;
 			case "rect":
 				ctx.beginPath();
@@ -70,7 +70,7 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
 				ctx.closePath();
 				if (act.s.Pen.Style != 5) ctx.stroke();
-				if (act.s.BkMode !== eMixMode.Transparent && act.s.Brush.Style != 1) ctx.fill();
+				if (act.s.BkMode !== eMixMode.Transparent || act.s.Brush.Style != eBrushStyles.Null) ctx.fill();
 				break;
 			case "text":
 				{
@@ -82,7 +82,6 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 						ctx.translate(-act.p[0], -act.p[1]);
 					}
 					else ctx.fillText(act.v, act.p[0], act.p[1]);
-					// TODO: Check BkMode and crate stroked text?
 				}
 				break;
 			case "cpy": {
