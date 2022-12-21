@@ -17,6 +17,19 @@ export const set_ctx_state = (ctx: CanvasRenderingContext2D, state: PlaybackDevi
 		if (name) font += ` '${name}', sans-serif`;
 		ctx.font = font.trim();
 	}
+	ctx.textBaseline = 'alphabetic';
+	ctx.textAlign = 'left';
+	if ((state.TextAlignmentMode & eTextAlignmentMode.Top) == eTextAlignmentMode.Top) {
+		ctx.textBaseline = 'top';
+	}
+	if ((state.TextAlignmentMode & eTextAlignmentMode.Bottom) == eTextAlignmentMode.Bottom) {
+		ctx.textBaseline = 'bottom';
+	}
+	if ((state.TextAlignmentMode & eTextAlignmentMode.Center) == eTextAlignmentMode.Center) {
+		ctx.textAlign = 'center';
+	} else if ((state.TextAlignmentMode & eTextAlignmentMode.Right) == eTextAlignmentMode.Right) {
+		ctx.textAlign = 'right';
+	}
 };
 
 // TODO: DIB BIT ORDER?
@@ -62,29 +75,14 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				break;
 			case "text":
 				{
-					const i = (act.s.Font.Italic) ? 'italic' : 'normal';
-					let x = 0;
-					ctx.textBaseline = 'alphabetic';
-					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Top) == eTextAlignmentMode.Top) {
-						ctx.textBaseline = 'top';
-					}
-					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Bottom) == eTextAlignmentMode.Bottom) {
-						ctx.textBaseline = 'bottom';
-					}
-					if ((act.s.TextAlignmentMode & eTextAlignmentMode.Center) == eTextAlignmentMode.Center) {
-						x = ctx.measureText(act.v).width / 2;
-					} else if ((act.s.TextAlignmentMode & eTextAlignmentMode.Right) == eTextAlignmentMode.Right) {
-						x = ctx.measureText(act.v).width;
-					}
-					ctx.font = `${i} normal ${act.s.Font.Weight ?? 400} ${Math.abs(act.s.Font.Height)}px ${act.s.Font.Name}`;
 					if (act.s && act.s.TextColor) ctx.fillStyle = css_color(act.s.TextColor);
 					if (act.s.Font.Angle != 0) {
-						ctx.translate(act.p[0] - x, act.p[1]);
+						ctx.translate(act.p[0], act.p[1]);
 						ctx.rotate(-act.s.Font.Angle * Math.PI / 180);
 						ctx.fillText(act.v, 0, 0);
-						ctx.translate(-act.p[0] - x, -act.p[1]);
+						ctx.translate(-act.p[0], -act.p[1]);
 					}
-					else ctx.fillText(act.v, act.p[0] - x, act.p[1]);
+					else ctx.fillText(act.v, act.p[0], act.p[1]);
 					// TODO: Check BkMode and crate stroked text?
 				}
 				break;
