@@ -185,7 +185,16 @@ export interface ActionRect extends ActionCommon {
 	p: Point[];
 }
 
-export type Action = ActionText | ActionPoly | ActionCpy | ActionStr | ActionLineTo | ActionRect;
+/** Draw ellipse */
+export interface ActionEllipse extends ActionCommon {
+	/** Action Type */
+	t: "ellipse";
+
+	/** Points */
+	p: Point[];
+}
+
+export type Action = ActionText | ActionPoly | ActionCpy | ActionStr | ActionLineTo | ActionRect | ActionEllipse;
 
 const parse_emf = (data: PreppedBytes): void => {
 	//try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
@@ -304,7 +313,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 		rt = data.read_shift(2);
 		let Record = WMFRecords[rt];
 		if (rt == 0x0000) break; // META_EOF
-		console.log(`0x${rt} ${Record.n}`);
+		console.log(`0x${rt.toString(16)} ${Record.n}`);
 		switch (rt) {
 			case 0x0626: { // META_ESCAPE
 				const EscapeFunction = data.read_shift(2);
@@ -314,11 +323,20 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 					case 0x000F: { // META_ESCAPE_ENHANCED_METAFILE
 						const ByteCount = data.read_shift(2);
 						let tmp = data.read_shift(4);
-						if (tmp != 0x43464D57) throw `Escape: Comment ID 0x${tmp.toString(16)} != 0x43464D57`;
+						if (tmp != 0x43464D57) {
+							console.log(`Escape: Comment ID 0x${tmp.toString(16)} != 0x43464D57`);
+							break;
+						};
 						tmp = data.read_shift(4);
-						if (tmp != 0x00000001) throw `Escape: Comment Type 0x${tmp.toString(16)} != 0x00000001`;
+						if (tmp != 0x00000001) {
+							console.log(`Escape: Comment Type 0x${tmp.toString(16)} != 0x00000001`);
+							break;
+						}
 						tmp = data.read_shift(4);
-						if (tmp != 0x00010000) throw `Escape: Version 0x${tmp.toString(16)} != 0x00010000`;
+						if (tmp != 0x00010000) {
+							console.log(`Escape: Version 0x${tmp.toString(16)} != 0x00010000`);
+							break;
+						}
 
 						const Checksum = data.read_shift(2);
 
@@ -606,6 +624,21 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 						i = b; b = d; d = i;
 					}
 					out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
+				}
+				break;
+
+			case 0x0418: // 2.3.3.3 META_ELLIPSE
+				{
+					let a = data.read_shift(2, 'i');
+					let b = data.read_shift(2, 'i');
+					let c = data.read_shift(2, 'i');
+					let d = data.read_shift(2, 'i');
+					let i;
+					if (a < c && b < d) {
+						i = a; a = c; c = i;
+						i = b; b = d; d = i;
+					}
+					out.push({ t: "ellipse", p: [[d, c], [b, a]], s: Object.assign({}, state) });
 				}
 				break;
 

@@ -128,12 +128,25 @@ var set_ctx_state = function (ctx, state) {
             font += " '".concat(name_1, "', sans-serif");
         ctx.font = font.trim();
     }
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Top) == wmf_1.eTextAlignmentMode.Top) {
+        ctx.textBaseline = 'top';
+    }
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Bottom) == wmf_1.eTextAlignmentMode.Bottom) {
+        ctx.textBaseline = 'bottom';
+    }
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Center) == wmf_1.eTextAlignmentMode.Center) {
+        ctx.textAlign = 'center';
+    }
+    else if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Right) == wmf_1.eTextAlignmentMode.Right) {
+        ctx.textAlign = 'right';
+    }
 };
 exports.set_ctx_state = set_ctx_state;
 // TODO: DIB BIT ORDER?
 var render_actions_to_context = function (out, ctx) {
     out.forEach(function (act) {
-        var _a;
         ctx.save();
         (0, exports.set_ctx_state)(ctx, act.s);
         switch (act.t) {
@@ -154,7 +167,7 @@ var render_actions_to_context = function (out, ctx) {
                     ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case 'lineto':
@@ -170,7 +183,7 @@ var render_actions_to_context = function (out, ctx) {
                 ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case "rect":
@@ -181,43 +194,44 @@ var render_actions_to_context = function (out, ctx) {
                     ctx.lineWidth = act.s.Pen.Width;
                 if (act.s.Brush.Color != null)
                     ctx.fillStyle = (0, exports.css_color)(act.s.Brush.Color);
-                ctx.moveTo(act.p[0][0], act.p[0][1]);
-                ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0], act.p[1][1]);
+                ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
                 ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
+                    ctx.fill();
+                break;
+            case 'ellipse':
+                ctx.beginPath();
+                if (act.s.Pen.Color != null)
+                    ctx.strokeStyle = (0, exports.css_color)(act.s.Pen.Color);
+                if (act.s.Pen.Width > 0)
+                    ctx.lineWidth = act.s.Pen.Width;
+                if (act.s.Brush.Color != null)
+                    ctx.fillStyle = (0, exports.css_color)(act.s.Brush.Color);
+                var rx = (act.p[1][0] - act.p[0][0]) / 2;
+                var ry = (act.p[1][1] - act.p[0][1]) / 2;
+                var x = act.p[0][0] + rx;
+                var y = act.p[0][1] + ry;
+                ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
+                ctx.closePath();
+                if (act.s.Pen.Style !== 5)
+                    ctx.stroke();
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style !== wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case "text":
                 {
-                    var i = (act.s.Font.Italic) ? 'italic' : 'normal';
-                    var x = 0;
-                    ctx.textBaseline = 'alphabetic';
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Top) == wmf_1.eTextAlignmentMode.Top) {
-                        ctx.textBaseline = 'top';
-                    }
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Bottom) == wmf_1.eTextAlignmentMode.Bottom) {
-                        ctx.textBaseline = 'bottom';
-                    }
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Center) == wmf_1.eTextAlignmentMode.Center) {
-                        x = ctx.measureText(act.v).width / 2;
-                    }
-                    else if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Right) == wmf_1.eTextAlignmentMode.Right) {
-                        x = ctx.measureText(act.v).width;
-                    }
-                    ctx.font = "".concat(i, " normal ").concat((_a = act.s.Font.Weight) !== null && _a !== void 0 ? _a : 400, " ").concat(Math.abs(act.s.Font.Height), "px ").concat(act.s.Font.Name);
                     if (act.s && act.s.TextColor)
                         ctx.fillStyle = (0, exports.css_color)(act.s.TextColor);
                     if (act.s.Font.Angle != 0) {
-                        ctx.translate(act.p[0] - x, act.p[1]);
+                        ctx.translate(act.p[0], act.p[1]);
                         ctx.rotate(-act.s.Font.Angle * Math.PI / 180);
                         ctx.fillText(act.v, 0, 0);
-                        ctx.translate(-act.p[0] - x, -act.p[1]);
+                        ctx.translate(-act.p[0], -act.p[1]);
                     }
                     else
-                        ctx.fillText(act.v, act.p[0] - x, act.p[1]);
-                    // TODO: Check BkMode and crate stroked text?
+                        ctx.fillText(act.v, act.p[0], act.p[1]);
                 }
                 break;
             case "cpy":
@@ -736,7 +750,7 @@ if (has_buf)
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.image_size_prepped_bytes = exports.get_actions_prepped_bytes = exports.ePenStyles = exports.eMixMode = exports.eTextAlignmentMode = void 0;
+exports.image_size_prepped_bytes = exports.get_actions_prepped_bytes = exports.eBrushStyles = exports.ePenStyles = exports.eMixMode = exports.eTextAlignmentMode = void 0;
 /*! wmf.js (C) 2020-present SheetJS LLC -- https://sheetjs.com */
 var util_1 = __webpack_require__(/*! ./util */ "./js/util.js");
 var Records_1 = __webpack_require__(/*! ./Records */ "./js/Records.js");
@@ -757,7 +771,7 @@ var eTextAlignmentMode;
 var eMixMode;
 (function (eMixMode) {
     eMixMode[eMixMode["Transparent"] = 1] = "Transparent";
-    eMixMode[eMixMode["Opaque"] = 2] = "Opaque";
+    eMixMode[eMixMode["Opaque"] = 2] = "Opaque"; /* Background is filled with the current background color before the text, hatched brush, or pen is drawn. */
 })(eMixMode = exports.eMixMode || (exports.eMixMode = {}));
 ;
 /* Pen styles */
@@ -780,6 +794,20 @@ var ePenStyles;
     ePenStyles[ePenStyles["JoinBevel"] = 4096] = "JoinBevel";
     ePenStyles[ePenStyles["JoinMiter"] = 8192] = "JoinMiter";
 })(ePenStyles = exports.ePenStyles || (exports.ePenStyles = {}));
+;
+var eBrushStyles;
+(function (eBrushStyles) {
+    eBrushStyles[eBrushStyles["Solid"] = 0] = "Solid";
+    eBrushStyles[eBrushStyles["Null"] = 1] = "Null";
+    eBrushStyles[eBrushStyles["Hatched"] = 2] = "Hatched";
+    eBrushStyles[eBrushStyles["Pattern"] = 3] = "Pattern";
+    eBrushStyles[eBrushStyles["Indexed"] = 4] = "Indexed";
+    eBrushStyles[eBrushStyles["DibPattern"] = 5] = "DibPattern";
+    eBrushStyles[eBrushStyles["DibPatternPT"] = 6] = "DibPatternPT";
+    eBrushStyles[eBrushStyles["Pattern8x8"] = 7] = "Pattern8x8";
+    eBrushStyles[eBrushStyles["DibPattern8x8"] = 8] = "DibPattern8x8";
+    eBrushStyles[eBrushStyles["MonoPattern"] = 9] = "MonoPattern";
+})(eBrushStyles = exports.eBrushStyles || (exports.eBrushStyles = {}));
 ;
 var parse_emf = function (data) {
     //try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
@@ -892,7 +920,7 @@ var get_actions_prepped_bytes = function (data) {
         var Record = Records_1.WMFRecords[rt];
         if (rt == 0x0000)
             break; // META_EOF
-        console.log("0x".concat(rt, " ").concat(Record.n));
+        console.log("0x".concat(rt.toString(16), " ").concat(Record.n));
         switch (rt) {
             case 0x0626:
                 { // META_ESCAPE
@@ -904,14 +932,21 @@ var get_actions_prepped_bytes = function (data) {
                             { // META_ESCAPE_ENHANCED_METAFILE
                                 var ByteCount = data.read_shift(2);
                                 var tmp = data.read_shift(4);
-                                if (tmp != 0x43464D57)
-                                    throw "Escape: Comment ID 0x".concat(tmp.toString(16), " != 0x43464D57");
+                                if (tmp != 0x43464D57) {
+                                    console.log("Escape: Comment ID 0x".concat(tmp.toString(16), " != 0x43464D57"));
+                                    break;
+                                }
+                                ;
                                 tmp = data.read_shift(4);
-                                if (tmp != 0x00000001)
-                                    throw "Escape: Comment Type 0x".concat(tmp.toString(16), " != 0x00000001");
+                                if (tmp != 0x00000001) {
+                                    console.log("Escape: Comment Type 0x".concat(tmp.toString(16), " != 0x00000001"));
+                                    break;
+                                }
                                 tmp = data.read_shift(4);
-                                if (tmp != 0x00010000)
-                                    throw "Escape: Version 0x".concat(tmp.toString(16), " != 0x00010000");
+                                if (tmp != 0x00010000) {
+                                    console.log("Escape: Version 0x".concat(tmp.toString(16), " != 0x00010000"));
+                                    break;
+                                }
                                 var Checksum = data.read_shift(2);
                                 data.l += 4; // Flags
                                 if (escapecnt == 0) {
@@ -1204,6 +1239,24 @@ var get_actions_prepped_bytes = function (data) {
                         d = i;
                     }
                     out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
+                }
+                break;
+            case 0x0418: // 2.3.3.3 META_ELLIPSE
+                {
+                    var a = data.read_shift(2, 'i');
+                    var b = data.read_shift(2, 'i');
+                    var c = data.read_shift(2, 'i');
+                    var d = data.read_shift(2, 'i');
+                    var i = void 0;
+                    if (a < c && b < d) {
+                        i = a;
+                        a = c;
+                        c = i;
+                        i = b;
+                        b = d;
+                        d = i;
+                    }
+                    out.push({ t: "ellipse", p: [[d, c], [b, a]], s: Object.assign({}, state) });
                 }
                 break;
             case 0x521: // 2.3.3.20 META_TEXTOUT

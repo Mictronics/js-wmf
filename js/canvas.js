@@ -26,12 +26,25 @@ var set_ctx_state = function (ctx, state) {
             font += " '".concat(name_1, "', sans-serif");
         ctx.font = font.trim();
     }
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Top) == wmf_1.eTextAlignmentMode.Top) {
+        ctx.textBaseline = 'top';
+    }
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Bottom) == wmf_1.eTextAlignmentMode.Bottom) {
+        ctx.textBaseline = 'bottom';
+    }
+    if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Center) == wmf_1.eTextAlignmentMode.Center) {
+        ctx.textAlign = 'center';
+    }
+    else if ((state.TextAlignmentMode & wmf_1.eTextAlignmentMode.Right) == wmf_1.eTextAlignmentMode.Right) {
+        ctx.textAlign = 'right';
+    }
 };
 exports.set_ctx_state = set_ctx_state;
 // TODO: DIB BIT ORDER?
 var render_actions_to_context = function (out, ctx) {
     out.forEach(function (act) {
-        var _a;
         ctx.save();
         (0, exports.set_ctx_state)(ctx, act.s);
         switch (act.t) {
@@ -52,7 +65,7 @@ var render_actions_to_context = function (out, ctx) {
                     ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case 'lineto':
@@ -68,7 +81,7 @@ var render_actions_to_context = function (out, ctx) {
                 ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case "rect":
@@ -79,43 +92,44 @@ var render_actions_to_context = function (out, ctx) {
                     ctx.lineWidth = act.s.Pen.Width;
                 if (act.s.Brush.Color != null)
                     ctx.fillStyle = (0, exports.css_color)(act.s.Brush.Color);
-                ctx.moveTo(act.p[0][0], act.p[0][1]);
-                ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0], act.p[1][1]);
+                ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
                 ctx.closePath();
                 if (act.s.Pen.Style != 5)
                     ctx.stroke();
-                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style != 1)
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
+                    ctx.fill();
+                break;
+            case 'ellipse':
+                ctx.beginPath();
+                if (act.s.Pen.Color != null)
+                    ctx.strokeStyle = (0, exports.css_color)(act.s.Pen.Color);
+                if (act.s.Pen.Width > 0)
+                    ctx.lineWidth = act.s.Pen.Width;
+                if (act.s.Brush.Color != null)
+                    ctx.fillStyle = (0, exports.css_color)(act.s.Brush.Color);
+                var rx = (act.p[1][0] - act.p[0][0]) / 2;
+                var ry = (act.p[1][1] - act.p[0][1]) / 2;
+                var x = act.p[0][0] + rx;
+                var y = act.p[0][1] + ry;
+                ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
+                ctx.closePath();
+                if (act.s.Pen.Style !== 5)
+                    ctx.stroke();
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent && act.s.Brush.Style !== wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
             case "text":
                 {
-                    var i = (act.s.Font.Italic) ? 'italic' : 'normal';
-                    var x = 0;
-                    ctx.textBaseline = 'alphabetic';
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Top) == wmf_1.eTextAlignmentMode.Top) {
-                        ctx.textBaseline = 'top';
-                    }
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Bottom) == wmf_1.eTextAlignmentMode.Bottom) {
-                        ctx.textBaseline = 'bottom';
-                    }
-                    if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Center) == wmf_1.eTextAlignmentMode.Center) {
-                        x = ctx.measureText(act.v).width / 2;
-                    }
-                    else if ((act.s.TextAlignmentMode & wmf_1.eTextAlignmentMode.Right) == wmf_1.eTextAlignmentMode.Right) {
-                        x = ctx.measureText(act.v).width;
-                    }
-                    ctx.font = "".concat(i, " normal ").concat((_a = act.s.Font.Weight) !== null && _a !== void 0 ? _a : 400, " ").concat(Math.abs(act.s.Font.Height), "px ").concat(act.s.Font.Name);
                     if (act.s && act.s.TextColor)
                         ctx.fillStyle = (0, exports.css_color)(act.s.TextColor);
                     if (act.s.Font.Angle != 0) {
-                        ctx.translate(act.p[0] - x, act.p[1]);
+                        ctx.translate(act.p[0], act.p[1]);
                         ctx.rotate(-act.s.Font.Angle * Math.PI / 180);
                         ctx.fillText(act.v, 0, 0);
-                        ctx.translate(-act.p[0] - x, -act.p[1]);
+                        ctx.translate(-act.p[0], -act.p[1]);
                     }
                     else
-                        ctx.fillText(act.v, act.p[0] - x, act.p[1]);
-                    // TODO: Check BkMode and crate stroked text?
+                        ctx.fillText(act.v, act.p[0], act.p[1]);
                 }
                 break;
             case "cpy":

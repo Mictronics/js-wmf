@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.image_size_prepped_bytes = exports.get_actions_prepped_bytes = exports.ePenStyles = exports.eMixMode = exports.eTextAlignmentMode = void 0;
+exports.image_size_prepped_bytes = exports.get_actions_prepped_bytes = exports.eBrushStyles = exports.ePenStyles = exports.eMixMode = exports.eTextAlignmentMode = void 0;
 /*! wmf.js (C) 2020-present SheetJS LLC -- https://sheetjs.com */
 var util_1 = require("./util");
 var Records_1 = require("./Records");
@@ -21,7 +21,7 @@ var eTextAlignmentMode;
 var eMixMode;
 (function (eMixMode) {
     eMixMode[eMixMode["Transparent"] = 1] = "Transparent";
-    eMixMode[eMixMode["Opaque"] = 2] = "Opaque";
+    eMixMode[eMixMode["Opaque"] = 2] = "Opaque"; /* Background is filled with the current background color before the text, hatched brush, or pen is drawn. */
 })(eMixMode = exports.eMixMode || (exports.eMixMode = {}));
 ;
 /* Pen styles */
@@ -44,6 +44,20 @@ var ePenStyles;
     ePenStyles[ePenStyles["JoinBevel"] = 4096] = "JoinBevel";
     ePenStyles[ePenStyles["JoinMiter"] = 8192] = "JoinMiter";
 })(ePenStyles = exports.ePenStyles || (exports.ePenStyles = {}));
+;
+var eBrushStyles;
+(function (eBrushStyles) {
+    eBrushStyles[eBrushStyles["Solid"] = 0] = "Solid";
+    eBrushStyles[eBrushStyles["Null"] = 1] = "Null";
+    eBrushStyles[eBrushStyles["Hatched"] = 2] = "Hatched";
+    eBrushStyles[eBrushStyles["Pattern"] = 3] = "Pattern";
+    eBrushStyles[eBrushStyles["Indexed"] = 4] = "Indexed";
+    eBrushStyles[eBrushStyles["DibPattern"] = 5] = "DibPattern";
+    eBrushStyles[eBrushStyles["DibPatternPT"] = 6] = "DibPatternPT";
+    eBrushStyles[eBrushStyles["Pattern8x8"] = 7] = "Pattern8x8";
+    eBrushStyles[eBrushStyles["DibPattern8x8"] = 8] = "DibPattern8x8";
+    eBrushStyles[eBrushStyles["MonoPattern"] = 9] = "MonoPattern";
+})(eBrushStyles = exports.eBrushStyles || (exports.eBrushStyles = {}));
 ;
 var parse_emf = function (data) {
     //try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
@@ -156,7 +170,7 @@ var get_actions_prepped_bytes = function (data) {
         var Record = Records_1.WMFRecords[rt];
         if (rt == 0x0000)
             break; // META_EOF
-        console.log("0x".concat(rt, " ").concat(Record.n));
+        console.log("0x".concat(rt.toString(16), " ").concat(Record.n));
         switch (rt) {
             case 0x0626:
                 { // META_ESCAPE
@@ -168,14 +182,21 @@ var get_actions_prepped_bytes = function (data) {
                             { // META_ESCAPE_ENHANCED_METAFILE
                                 var ByteCount = data.read_shift(2);
                                 var tmp = data.read_shift(4);
-                                if (tmp != 0x43464D57)
-                                    throw "Escape: Comment ID 0x".concat(tmp.toString(16), " != 0x43464D57");
+                                if (tmp != 0x43464D57) {
+                                    console.log("Escape: Comment ID 0x".concat(tmp.toString(16), " != 0x43464D57"));
+                                    break;
+                                }
+                                ;
                                 tmp = data.read_shift(4);
-                                if (tmp != 0x00000001)
-                                    throw "Escape: Comment Type 0x".concat(tmp.toString(16), " != 0x00000001");
+                                if (tmp != 0x00000001) {
+                                    console.log("Escape: Comment Type 0x".concat(tmp.toString(16), " != 0x00000001"));
+                                    break;
+                                }
                                 tmp = data.read_shift(4);
-                                if (tmp != 0x00010000)
-                                    throw "Escape: Version 0x".concat(tmp.toString(16), " != 0x00010000");
+                                if (tmp != 0x00010000) {
+                                    console.log("Escape: Version 0x".concat(tmp.toString(16), " != 0x00010000"));
+                                    break;
+                                }
                                 var Checksum = data.read_shift(2);
                                 data.l += 4; // Flags
                                 if (escapecnt == 0) {
@@ -468,6 +489,24 @@ var get_actions_prepped_bytes = function (data) {
                         d = i;
                     }
                     out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
+                }
+                break;
+            case 0x0418: // 2.3.3.3 META_ELLIPSE
+                {
+                    var a = data.read_shift(2, 'i');
+                    var b = data.read_shift(2, 'i');
+                    var c = data.read_shift(2, 'i');
+                    var d = data.read_shift(2, 'i');
+                    var i = void 0;
+                    if (a < c && b < d) {
+                        i = a;
+                        a = c;
+                        c = i;
+                        i = b;
+                        b = d;
+                        d = i;
+                    }
+                    out.push({ t: "ellipse", p: [[d, c], [b, a]], s: Object.assign({}, state) });
                 }
                 break;
             case 0x521: // 2.3.3.20 META_TEXTOUT

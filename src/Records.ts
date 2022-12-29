@@ -56,7 +56,7 @@ export const WMFRecords: { [key: number]: WMFRecord } = {
 	0x0412: { n: 'META_SCALEVIEWPORTEXT' },
 	0x0415: { n: 'META_EXCLUDECLIPRECT' },
 	0x0416: { n: "META_INTERSECTCLIPRECT" }, // 2.3.5.3
-	0x0418: { n: 'META_ELLIPSE' },
+	0x0418: { n: 'META_ELLIPSE' }, // 2.3.3.3
 	0x0419: { n: 'META_FLOODFILL' },
 	0x041B: { n: 'META_RECTANGLE' },
 	0x041F: { n: 'META_SETPIXEL' },
