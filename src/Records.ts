@@ -65,7 +65,7 @@ export const WMFRecords: { [key: number]: WMFRecord } = {
 	0x0521: { n: 'META_TEXTOUT' },
 	0x0538: { n: "META_POLYPOLYGON" }, // 2.3.3.16
 	0x0548: { n: 'META_EXTFLOODFILL' },
-	0x061C: { n: 'META_ROUNDRECT' },
+	0x061C: { n: 'META_ROUNDRECT' }, // 2.3.3.18
 	0x061D: { n: 'META_PATBLT' },
 	0x0626: { n: "META_ESCAPE" }, // 2.3.6.1
 	0x06FF: { n: 'META_CREATEREGION' },

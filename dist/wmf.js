@@ -202,6 +202,19 @@ var render_actions_to_context = function (out, ctx) {
                 if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
+            case "roundrect":
+                if (act.s.Pen.Color != null)
+                    ctx.strokeStyle = (0, exports.css_color)(act.s.Pen.Color);
+                if (act.s.Pen.Width > 0)
+                    ctx.lineWidth = act.s.Pen.Width;
+                if (act.s.Brush.Color != null)
+                    ctx.fillStyle = (0, exports.css_color)(act.s.Brush.Color);
+                ctx.roundRect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1], act.r);
+                if (act.s.Pen.Style != 5)
+                    ctx.stroke();
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
+                    ctx.fill();
+                break;
             case 'ellipse':
                 ctx.beginPath();
                 if (act.s.Pen.Color != null)
@@ -1240,6 +1253,29 @@ var get_actions_prepped_bytes = function (data) {
                         d = i;
                     }
                     out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
+                }
+                break;
+            case 0x061C: // 2.3.3.18 META_ROUNDRECT
+                {
+                    var r = data.read_shift(2, 'i');
+                    var w = data.read_shift(2, 'i');
+                    if (w > r) {
+                        r = w;
+                    }
+                    var a = data.read_shift(2, 'i');
+                    var b = data.read_shift(2, 'i');
+                    var c = data.read_shift(2, 'i');
+                    var d = data.read_shift(2, 'i');
+                    var i = void 0;
+                    if (a < c && b < d) {
+                        i = a;
+                        a = c;
+                        c = i;
+                        i = b;
+                        b = d;
+                        d = i;
+                    }
+                    out.push({ t: "roundrect", p: [[d, c], [b, a]], r: r, s: Object.assign({}, state) });
                 }
                 break;
             case 0x0418: // 2.3.3.3 META_ELLIPSE

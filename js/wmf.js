@@ -491,6 +491,29 @@ var get_actions_prepped_bytes = function (data) {
                     out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
                 }
                 break;
+            case 0x061C: // 2.3.3.18 META_ROUNDRECT
+                {
+                    var r = data.read_shift(2, 'i');
+                    var w = data.read_shift(2, 'i');
+                    if (w > r) {
+                        r = w;
+                    }
+                    var a = data.read_shift(2, 'i');
+                    var b = data.read_shift(2, 'i');
+                    var c = data.read_shift(2, 'i');
+                    var d = data.read_shift(2, 'i');
+                    var i = void 0;
+                    if (a < c && b < d) {
+                        i = a;
+                        a = c;
+                        c = i;
+                        i = b;
+                        b = d;
+                        d = i;
+                    }
+                    out.push({ t: "roundrect", p: [[d, c], [b, a]], r: r, s: Object.assign({}, state) });
+                }
+                break;
             case 0x0418: // 2.3.3.3 META_ELLIPSE
                 {
                     var a = data.read_shift(2, 'i');

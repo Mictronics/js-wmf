@@ -179,10 +179,13 @@ export interface ActionLineTo extends ActionCommon {
 /** Draw rectangle */
 export interface ActionRect extends ActionCommon {
 	/** Action Type */
-	t: "rect";
+	t: 'rect' | 'roundrect';
 
 	/** Points */
 	p: Point[];
+
+	/** Corner radius */
+	r?: number;
 }
 
 /** Draw ellipse */
@@ -624,6 +627,26 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 						i = b; b = d; d = i;
 					}
 					out.push({ t: "rect", p: [[d, c], [b, a]], s: Object.assign({}, state) });
+				}
+				break;
+
+			case 0x061C: // 2.3.3.18 META_ROUNDRECT
+				{
+					let r = data.read_shift(2, 'i');
+					let w = data.read_shift(2, 'i');
+					if (w > r) {
+						r = w;
+					}
+					let a = data.read_shift(2, 'i');
+					let b = data.read_shift(2, 'i');
+					let c = data.read_shift(2, 'i');
+					let d = data.read_shift(2, 'i');
+					let i;
+					if (a < c && b < d) {
+						i = a; a = c; c = i;
+						i = b; b = d; d = i;
+					}
+					out.push({ t: "roundrect", p: [[d, c], [b, a]], r, s: Object.assign({}, state) });
 				}
 				break;
 
