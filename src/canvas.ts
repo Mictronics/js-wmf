@@ -140,9 +140,14 @@ export const render_canvas = (out: Action[], image: HTMLCanvasElement): void => 
 		if (ctx) return;
 		if (!act.s) return;
 		if (!act.s.Extent || !act.s.Origin) return;
-		image.width = act.s.Extent[0] - act.s.Origin[0];
-		image.height = act.s.Extent[1] - act.s.Origin[1];
+		const negX = act.s.Extent[0] < 0;
+		const negY = act.s.Extent[1] < 0;
+		image.width = negX ? -act.s.Extent[0] : act.s.Extent[0];
+		image.height = negY ? -act.s.Extent[1] : act.s.Extent[1];
 		ctx = image.getContext('2d');
+		ctx.setTransform(negX ? -1 : 1, 0, 0, negY ? -1 : 1,
+				 negX ? act.s.Origin[0] : -act.s.Origin[0],
+				 negY ? act.s.Origin[1] : -act.s.Origin[1]);
 		ctx.save();
 		ctx.fillStyle = 'rgb(255,255,255)';
 		ctx.fillRect(0, 0, act.s.Extent[0] - act.s.Origin[0], act.s.Extent[1] - act.s.Origin[1])
@@ -153,9 +158,45 @@ export const render_canvas = (out: Action[], image: HTMLCanvasElement): void => 
 	render_actions_to_context(out, ctx);
 }
 
+export const render_canvas_rectangle = (out: Action[], image: HTMLCanvasElement,
+					x: number, y: number, width: number, height: number): void => {
+	let ctx: CanvasRenderingContext2D;
+
+	ctx = image.getContext('2d');
+	ctx.save();
+	ctx.rect(x, y, width, height);
+	ctx.clip();
+	/* find first action with window info */
+	for (const act of out) {
+		if (!act.s || !act.s.Extent || !act.s.Origin)
+			continue;
+		const scaleX = width / act.s.Extent[0];
+		const scaleY = height / act.s.Extent[1];
+		const offX = act.s.Origin[0] * scaleX;
+		const offY = act.s.Origin[1] * scaleY;
+		ctx.setTransform(scaleX, 0, 0, scaleY, x - offX, y - offY);
+		ctx.save();
+		ctx.fillStyle = 'rgb(255,255,255)';
+		ctx.fillRect(0, 0, act.s.Extent[0] - act.s.Origin[0], act.s.Extent[1] - act.s.Origin[1])
+		ctx.restore();
+		break;
+	}
+
+	render_actions_to_context(out, ctx);
+	ctx.restore();
+}
+
 export const draw_canvas = (data: Buffer | Uint8Array | ArrayBuffer, image: HTMLCanvasElement): void => {
 	if (data instanceof ArrayBuffer) return draw_canvas(new Uint8Array(data), image);
 	prep_blob((data as any), 0);
 	const out: Action[] = get_actions_prepped_bytes(data as PreppedBytes);
 	return render_canvas(out, image);
+};
+
+export const draw_canvas_rectangle = (data: Buffer | Uint8Array | ArrayBuffer, image: HTMLCanvasElement,
+					x: number, y: number, width: number, height: number): void => {
+	if (data instanceof ArrayBuffer) return draw_canvas_rectangle(new Uint8Array(data), image, x, y, width, height);
+	prep_blob((data as any), 0);
+	const out: Action[] = get_actions_prepped_bytes(data as PreppedBytes);
+	return render_canvas_rectangle(out, image, x, y, width, height);
 };
