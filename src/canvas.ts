@@ -80,6 +80,17 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 				if (act.s.Pen.Style != 5) ctx.stroke();
 				if (act.s.BkMode !== eMixMode.Transparent || act.s.Brush.Style != eBrushStyles.Null) ctx.fill();
 				break;
+			case 'exttxtrect':
+				// Optional rectangle in META_EXTTEXTOUT Record
+				// Opaquing support only
+				if (act.s.BkMode !== eMixMode.Transparent) {
+					ctx.beginPath();
+					ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
+					ctx.fillStyle = (0, exports.css_color)(act.s.BkColor);
+					ctx.fill();
+					ctx.closePath();
+				}
+				break;
 			case 'ellipse':
 				ctx.beginPath();
 				if (act.s.Pen.Color != null) ctx.strokeStyle = css_color(act.s.Pen.Color);
@@ -146,8 +157,8 @@ export const render_canvas = (out: Action[], image: HTMLCanvasElement): void => 
 		image.height = negY ? -act.s.Extent[1] : act.s.Extent[1];
 		ctx = image.getContext('2d');
 		ctx.setTransform(negX ? -1 : 1, 0, 0, negY ? -1 : 1,
-				 negX ? act.s.Origin[0] : -act.s.Origin[0],
-				 negY ? act.s.Origin[1] : -act.s.Origin[1]);
+			negX ? act.s.Origin[0] : -act.s.Origin[0],
+			negY ? act.s.Origin[1] : -act.s.Origin[1]);
 		ctx.save();
 		ctx.fillStyle = 'rgb(255,255,255)';
 		ctx.fillRect(0, 0, act.s.Extent[0] - act.s.Origin[0], act.s.Extent[1] - act.s.Origin[1])
@@ -159,7 +170,7 @@ export const render_canvas = (out: Action[], image: HTMLCanvasElement): void => 
 }
 
 export const render_canvas_rectangle = (out: Action[], image: HTMLCanvasElement,
-					x: number, y: number, width: number, height: number): void => {
+	x: number, y: number, width: number, height: number): void => {
 	let ctx: CanvasRenderingContext2D;
 
 	ctx = image.getContext('2d');
@@ -194,7 +205,7 @@ export const draw_canvas = (data: Buffer | Uint8Array | ArrayBuffer, image: HTML
 };
 
 export const draw_canvas_rectangle = (data: Buffer | Uint8Array | ArrayBuffer, image: HTMLCanvasElement,
-					x: number, y: number, width: number, height: number): void => {
+	x: number, y: number, width: number, height: number): void => {
 	if (data instanceof ArrayBuffer) return draw_canvas_rectangle(new Uint8Array(data), image, x, y, width, height);
 	prep_blob((data as any), 0);
 	const out: Action[] = get_actions_prepped_bytes(data as PreppedBytes);

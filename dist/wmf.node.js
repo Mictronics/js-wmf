@@ -214,6 +214,17 @@ var render_actions_to_context = function (out, ctx) {
                 if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
+            case 'exttxtrect':
+                // Optional rectangle in META_EXTTEXTOUT Record
+                // Opaquing support only
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent) {
+                    ctx.beginPath();
+                    ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
+                    ctx.fillStyle = (0, exports.css_color)(act.s.BkColor);
+                    ctx.fill();
+                    ctx.closePath();
+                }
+                break;
             case 'ellipse':
                 ctx.beginPath();
                 if (act.s.Pen.Color != null)
@@ -969,7 +980,7 @@ var get_actions_prepped_bytes = function (data) {
         var Record = Records_1.WMFRecords[rt];
         if (rt == 0x0000)
             break; // META_EOF
-        console.log("0x".concat(rt.toString(16), " ").concat(Record.n));
+        //console.log(`0x${rt.toString(16)} ${Record.n}`);
         switch (rt) {
             case 0x0626:
                 { // META_ESCAPE
@@ -1100,7 +1111,35 @@ var get_actions_prepped_bytes = function (data) {
                     var StringLength = data.read_shift(2);
                     var fwOpts = data.read_shift(2); // 2.1.2.2
                     if (fwOpts & 0x06) {
-                        data.l += 8; // Rectangle 2.2.2.18 (for clipping/opaquing)
+                        // Rectangle 2.2.2.18 (for clipping/opaquing)
+                        var b = data.read_shift(2, 'i');
+                        var a = data.read_shift(2, 'i');
+                        var d = data.read_shift(2, 'i');
+                        var c = data.read_shift(2, 'i');
+                        var i = void 0;
+                        if (a < c && b < d) {
+                            i = a;
+                            a = c;
+                            c = i;
+                            i = b;
+                            b = d;
+                            d = i;
+                        }
+                        // Support only opaquing
+                        if (fwOpts & 0x02) {
+                            state.BkMode = eMixMode.Opaque;
+                        }
+                        else {
+                            state.BkMode = eMixMode.Transparent;
+                        }
+                        out.push({
+                            t: 'exttxtrect',
+                            p: [
+                                [d, c],
+                                [b, a]
+                            ],
+                            s: Object.assign({}, state)
+                        });
                     }
                     var str = data.read_shift(StringLength, 'cpstr');
                     if (data.l < end) { /* TODO: Dx */ }

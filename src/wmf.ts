@@ -179,7 +179,7 @@ export interface ActionLineTo extends ActionCommon {
 /** Draw rectangle */
 export interface ActionRect extends ActionCommon {
 	/** Action Type */
-	t: 'rect' | 'roundrect';
+	t: 'rect' | 'roundrect' | 'exttxtrect';
 
 	/** Points */
 	p: Point[];
@@ -316,7 +316,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 		rt = data.read_shift(2);
 		let Record = WMFRecords[rt];
 		if (rt == 0x0000) break; // META_EOF
-		console.log(`0x${rt.toString(16)} ${Record.n}`);
+		//console.log(`0x${rt.toString(16)} ${Record.n}`);
 		switch (rt) {
 			case 0x0626: { // META_ESCAPE
 				const EscapeFunction = data.read_shift(2);
@@ -436,7 +436,34 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				const StringLength = data.read_shift(2);
 				const fwOpts = data.read_shift(2); // 2.1.2.2
 				if (fwOpts & 0x06) {
-					data.l += 8; // Rectangle 2.2.2.18 (for clipping/opaquing)
+					// Rectangle 2.2.2.18 (for clipping/opaquing)
+					let b = data.read_shift(2, 'i');
+					let a = data.read_shift(2, 'i');
+					let d = data.read_shift(2, 'i');
+					let c = data.read_shift(2, 'i');
+					let i = void 0;
+					if (a < c && b < d) {
+						i = a;
+						a = c;
+						c = i;
+						i = b;
+						b = d;
+						d = i;
+					}
+					// Support only opaquing
+					if (fwOpts & 0x02) {
+						state.BkMode = eMixMode.Opaque;
+					} else {
+						state.BkMode = eMixMode.Transparent;
+					}
+					out.push({
+						t: 'exttxtrect',
+						p: [
+							[d, c],
+							[b, a]
+						],
+						s: Object.assign({}, state)
+					});
 				}
 				const str = data.read_shift(StringLength, 'cpstr');
 				if (data.l < end) {/* TODO: Dx */ }

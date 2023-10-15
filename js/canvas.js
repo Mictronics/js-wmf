@@ -112,6 +112,17 @@ var render_actions_to_context = function (out, ctx) {
                 if (act.s.BkMode !== wmf_1.eMixMode.Transparent || act.s.Brush.Style != wmf_1.eBrushStyles.Null)
                     ctx.fill();
                 break;
+            case 'exttxtrect':
+                // Optional rectangle in META_EXTTEXTOUT Record
+                // Opaquing support only
+                if (act.s.BkMode !== wmf_1.eMixMode.Transparent) {
+                    ctx.beginPath();
+                    ctx.rect(act.p[0][0], act.p[0][1], act.p[1][0] - act.p[0][0], act.p[1][1] - act.p[0][1]);
+                    ctx.fillStyle = (0, exports.css_color)(act.s.BkColor);
+                    ctx.fill();
+                    ctx.closePath();
+                }
+                break;
             case 'ellipse':
                 ctx.beginPath();
                 if (act.s.Pen.Color != null)
