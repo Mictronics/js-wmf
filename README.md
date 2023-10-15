@@ -2,7 +2,6 @@
 
 Processor for Windows MetaFile (WMF) files in JS (for the browser and nodejs).
 
-
 ## Installation
 
 With [npm](https://www.npmjs.org/package/wmf):
@@ -19,7 +18,6 @@ In the browser:
 
 The browser exposes a variable `WMF`.
 
-
 ## Usage
 
 The `data` argument is expected to be an `ArrayBuffer`, `Uint8Array` or `Buffer`
@@ -31,12 +29,12 @@ The `data` argument is expected to be an `ArrayBuffer`, `Uint8Array` or `Buffer`
 
 ### Notes
 
-- The library assumes the global `ImageData` is available.  For nodejs-powered
+- The library assumes the global `ImageData` is available. For nodejs-powered
   canvas implementations, a shim must be exposed as a global. Using the `canvas`
   npm package:
 
 ```js
-const { createImageData } = require("canvas");
+const { createImageData } = require('canvas');
 global.ImageData = createImageData;
 ```
 
@@ -48,7 +46,6 @@ const size = WMF.image_size(data);
 const canvas = new OffscreenCanvas(size[0], size[1]);
 ```
 
-
 ## Examples
 
 <details>
@@ -56,10 +53,10 @@ const canvas = new OffscreenCanvas(size[0], size[1]);
 
 ```js
 // assume `canvas` is a DOM element
-(async() => {
-  const res = await fetch("url/for/image.wmf");
+(async () => {
+  const res = await fetch('url/for/image.wmf');
   const ab = await res.arrayBuffer();
-  WMF.draw_canvas(ab, document.getElementById("canvas"));
+  WMF.draw_canvas(ab, document.getElementById('canvas'));
 })();
 ```
 
@@ -69,7 +66,7 @@ const canvas = new OffscreenCanvas(size[0], size[1]);
   <summary><b>NodeJS (using `canvas` npm module)</b> (click to show)</summary>
 
 ```js
-const { createCanvas, createImageData } = require("canvas");
+const { createCanvas, createImageData } = require('canvas');
 global.ImageData = createImageData;
 
 const size = WMF.image_size(data);
@@ -79,14 +76,28 @@ WMF.draw_canvas(data, canvas);
 
 </details>
 
+<details>
+  <summary><b>NodeJS Convert base64 WMF and save as PNG</b> (click to show)</summary>
+
+```js
+base64Data = el.attribs.src.replace(/^data:image\/wmf;base64,/, '');
+base64Data = Buffer.from(base64Data, 'base64');
+util.prep_blob(base64Data, 0);
+const size = wmf.image_size_prepped_bytes(base64Data);
+const canvas = createCanvas(size[0], size[1]);
+wmfCanvas.draw_canvas(base64Data, canvas);
+if (!fs.existsSync(pDest)) {
+  fs.writeFileSync(pDest, canvas.toBuffer('image/png'));
+}
+```
+
+</details>
 
 ## License
 
-Please consult the attached LICENSE file for details.  All rights not explicitly
+Please consult the attached LICENSE file for details. All rights not explicitly
 granted by the Apache 2.0 License are reserved by the Original Author.
-
 
 ## References
 
- - `MS-WMF`: Windows Metafile Format
-
+- `MS-WMF`: Windows Metafile Format
