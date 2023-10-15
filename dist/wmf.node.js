@@ -102,7 +102,7 @@ exports.WMFEscapes = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.draw_canvas = exports.render_canvas = exports.render_actions_to_context = exports.set_ctx_state = exports.css_color = void 0;
+exports.draw_canvas_rectangle = exports.draw_canvas = exports.render_canvas_rectangle = exports.render_canvas = exports.render_actions_to_context = exports.set_ctx_state = exports.css_color = void 0;
 /*! wmf.js (C) 2020-present SheetJS LLC -- https://sheetjs.com */
 var util_1 = __webpack_require__(/*! ./util */ "./js/util.js");
 var wmf_1 = __webpack_require__(/*! ./wmf */ "./js/wmf.js");
@@ -286,9 +286,12 @@ var render_canvas = function (out, image) {
             return;
         if (!act.s.Extent || !act.s.Origin)
             return;
-        image.width = act.s.Extent[0] - act.s.Origin[0];
-        image.height = act.s.Extent[1] - act.s.Origin[1];
+        var negX = act.s.Extent[0] < 0;
+        var negY = act.s.Extent[1] < 0;
+        image.width = negX ? -act.s.Extent[0] : act.s.Extent[0];
+        image.height = negY ? -act.s.Extent[1] : act.s.Extent[1];
         ctx = image.getContext('2d');
+        ctx.setTransform(negX ? -1 : 1, 0, 0, negY ? -1 : 1, negX ? act.s.Origin[0] : -act.s.Origin[0], negY ? act.s.Origin[1] : -act.s.Origin[1]);
         ctx.save();
         ctx.fillStyle = 'rgb(255,255,255)';
         ctx.fillRect(0, 0, act.s.Extent[0] - act.s.Origin[0], act.s.Extent[1] - act.s.Origin[1]);
@@ -299,6 +302,32 @@ var render_canvas = function (out, image) {
     (0, exports.render_actions_to_context)(out, ctx);
 };
 exports.render_canvas = render_canvas;
+var render_canvas_rectangle = function (out, image, x, y, width, height) {
+    var ctx;
+    ctx = image.getContext('2d');
+    ctx.save();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+    /* find first action with window info */
+    for (var _i = 0, out_1 = out; _i < out_1.length; _i++) {
+        var act = out_1[_i];
+        if (!act.s || !act.s.Extent || !act.s.Origin)
+            continue;
+        var scaleX = width / act.s.Extent[0];
+        var scaleY = height / act.s.Extent[1];
+        var offX = act.s.Origin[0] * scaleX;
+        var offY = act.s.Origin[1] * scaleY;
+        ctx.setTransform(scaleX, 0, 0, scaleY, x - offX, y - offY);
+        ctx.save();
+        ctx.fillStyle = 'rgb(255,255,255)';
+        ctx.fillRect(0, 0, act.s.Extent[0] - act.s.Origin[0], act.s.Extent[1] - act.s.Origin[1]);
+        ctx.restore();
+        break;
+    }
+    (0, exports.render_actions_to_context)(out, ctx);
+    ctx.restore();
+};
+exports.render_canvas_rectangle = render_canvas_rectangle;
 var draw_canvas = function (data, image) {
     if (data instanceof ArrayBuffer)
         return (0, exports.draw_canvas)(new Uint8Array(data), image);
@@ -307,6 +336,14 @@ var draw_canvas = function (data, image) {
     return (0, exports.render_canvas)(out, image);
 };
 exports.draw_canvas = draw_canvas;
+var draw_canvas_rectangle = function (data, image, x, y, width, height) {
+    if (data instanceof ArrayBuffer)
+        return (0, exports.draw_canvas_rectangle)(new Uint8Array(data), image, x, y, width, height);
+    (0, util_1.prep_blob)(data, 0);
+    var out = (0, wmf_1.get_actions_prepped_bytes)(data);
+    return (0, exports.render_canvas_rectangle)(out, image, x, y, width, height);
+};
+exports.draw_canvas_rectangle = draw_canvas_rectangle;
 
 
 /***/ }),
@@ -359,7 +396,6 @@ exports.bconcat = exports.__utf16le = exports.new_buf = exports.prep_blob = expo
 var has_buf = !!(typeof Buffer !== 'undefined' && typeof process !== 'undefined' && typeof process.versions !== 'undefined' && process.versions.node);
 exports.has_buf = has_buf;
 var Buffer_from;
-exports.Buffer_from = Buffer_from;
 if (typeof Buffer !== 'undefined') {
     var nbfs = !Buffer.from;
     if (!nbfs)
@@ -778,14 +814,14 @@ var eTextAlignmentMode;
     eTextAlignmentMode[eTextAlignmentMode["Center"] = 6] = "Center";
     eTextAlignmentMode[eTextAlignmentMode["Bottom"] = 8] = "Bottom";
     eTextAlignmentMode[eTextAlignmentMode["Baseline"] = 24] = "Baseline";
-})(eTextAlignmentMode = exports.eTextAlignmentMode || (exports.eTextAlignmentMode = {}));
+})(eTextAlignmentMode || (exports.eTextAlignmentMode = eTextAlignmentMode = {}));
 ;
 /* Background mix mode */
 var eMixMode;
 (function (eMixMode) {
     eMixMode[eMixMode["Transparent"] = 1] = "Transparent";
     eMixMode[eMixMode["Opaque"] = 2] = "Opaque"; /* Background is filled with the current background color before the text, hatched brush, or pen is drawn. */
-})(eMixMode = exports.eMixMode || (exports.eMixMode = {}));
+})(eMixMode || (exports.eMixMode = eMixMode = {}));
 ;
 /* Pen styles */
 var ePenStyles;
@@ -806,7 +842,7 @@ var ePenStyles;
     ePenStyles[ePenStyles["EndCapFlat"] = 512] = "EndCapFlat";
     ePenStyles[ePenStyles["JoinBevel"] = 4096] = "JoinBevel";
     ePenStyles[ePenStyles["JoinMiter"] = 8192] = "JoinMiter";
-})(ePenStyles = exports.ePenStyles || (exports.ePenStyles = {}));
+})(ePenStyles || (exports.ePenStyles = ePenStyles = {}));
 ;
 var eBrushStyles;
 (function (eBrushStyles) {
@@ -820,7 +856,7 @@ var eBrushStyles;
     eBrushStyles[eBrushStyles["Pattern8x8"] = 7] = "Pattern8x8";
     eBrushStyles[eBrushStyles["DibPattern8x8"] = 8] = "DibPattern8x8";
     eBrushStyles[eBrushStyles["MonoPattern"] = 9] = "MonoPattern";
-})(eBrushStyles = exports.eBrushStyles || (exports.eBrushStyles = {}));
+})(eBrushStyles || (exports.eBrushStyles = eBrushStyles = {}));
 ;
 var parse_emf = function (data) {
     //try { require("fs").writeFileSync("out.emf", data); } catch(e) {}

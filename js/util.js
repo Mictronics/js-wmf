@@ -5,7 +5,6 @@ exports.bconcat = exports.__utf16le = exports.new_buf = exports.prep_blob = expo
 var has_buf = !!(typeof Buffer !== 'undefined' && typeof process !== 'undefined' && typeof process.versions !== 'undefined' && process.versions.node);
 exports.has_buf = has_buf;
 var Buffer_from;
-exports.Buffer_from = Buffer_from;
 if (typeof Buffer !== 'undefined') {
     var nbfs = !Buffer.from;
     if (!nbfs)

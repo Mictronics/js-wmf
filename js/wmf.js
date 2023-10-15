@@ -15,14 +15,14 @@ var eTextAlignmentMode;
     eTextAlignmentMode[eTextAlignmentMode["Center"] = 6] = "Center";
     eTextAlignmentMode[eTextAlignmentMode["Bottom"] = 8] = "Bottom";
     eTextAlignmentMode[eTextAlignmentMode["Baseline"] = 24] = "Baseline";
-})(eTextAlignmentMode = exports.eTextAlignmentMode || (exports.eTextAlignmentMode = {}));
+})(eTextAlignmentMode || (exports.eTextAlignmentMode = eTextAlignmentMode = {}));
 ;
 /* Background mix mode */
 var eMixMode;
 (function (eMixMode) {
     eMixMode[eMixMode["Transparent"] = 1] = "Transparent";
     eMixMode[eMixMode["Opaque"] = 2] = "Opaque"; /* Background is filled with the current background color before the text, hatched brush, or pen is drawn. */
-})(eMixMode = exports.eMixMode || (exports.eMixMode = {}));
+})(eMixMode || (exports.eMixMode = eMixMode = {}));
 ;
 /* Pen styles */
 var ePenStyles;
@@ -43,7 +43,7 @@ var ePenStyles;
     ePenStyles[ePenStyles["EndCapFlat"] = 512] = "EndCapFlat";
     ePenStyles[ePenStyles["JoinBevel"] = 4096] = "JoinBevel";
     ePenStyles[ePenStyles["JoinMiter"] = 8192] = "JoinMiter";
-})(ePenStyles = exports.ePenStyles || (exports.ePenStyles = {}));
+})(ePenStyles || (exports.ePenStyles = ePenStyles = {}));
 ;
 var eBrushStyles;
 (function (eBrushStyles) {
@@ -57,7 +57,7 @@ var eBrushStyles;
     eBrushStyles[eBrushStyles["Pattern8x8"] = 7] = "Pattern8x8";
     eBrushStyles[eBrushStyles["DibPattern8x8"] = 8] = "DibPattern8x8";
     eBrushStyles[eBrushStyles["MonoPattern"] = 9] = "MonoPattern";
-})(eBrushStyles = exports.eBrushStyles || (exports.eBrushStyles = {}));
+})(eBrushStyles || (exports.eBrushStyles = eBrushStyles = {}));
 ;
 var parse_emf = function (data) {
     //try { require("fs").writeFileSync("out.emf", data); } catch(e) {}
